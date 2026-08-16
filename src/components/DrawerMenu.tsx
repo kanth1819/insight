@@ -167,7 +167,7 @@ export default function DrawerMenu({ visible, onClose, activeItem = 'dashboard' 
 
 const styles = StyleSheet.create({
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(10, 25, 50, 0.5)',
     zIndex: 100,
   },

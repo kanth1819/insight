@@ -1,44 +1,37 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   StatusBar,
-  Animated,
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-import { useWorkOrders, WorkOrder } from '@/context/WorkOrderContext';
+import { useWorkOrders } from '@/context/WorkOrderContext';
 import DrawerMenu from '@/components/DrawerMenu';
-import WorkOrderCard from '@/components/WorkOrderCard';
+import WorkOrderTable from '@/components/WorkOrderTable';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { workOrders } = useWorkOrders();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterSeverity, setFilterSeverity] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const headerScrollY = useRef(new Animated.Value(0)).current;
 
   const filteredOrders = workOrders.filter((wo) => {
     const q = searchQuery.toLowerCase();
-    const matchesSearch =
+    return (
       !q ||
       wo.id.includes(q) ||
       wo.customer.toLowerCase().includes(q) ||
       wo.ceid.toLowerCase().includes(q) ||
       wo.woTech.toLowerCase().includes(q) ||
       wo.department.toLowerCase().includes(q) ||
-      wo.reportedProblem.toLowerCase().includes(q);
-    const matchesSeverity = !filterSeverity || wo.severity === filterSeverity;
-    const matchesStatus = !filterStatus || wo.status === filterStatus;
-    return matchesSearch && matchesSeverity && matchesStatus;
+      wo.reportedProblem.toLowerCase().includes(q)
+    );
   });
 
   const stats = {
@@ -48,79 +41,9 @@ export default function DashboardScreen() {
     acknowledged: workOrders.filter((w) => w.status === 'Acknowledged').length,
   };
 
-  const renderItem = useCallback(
-    ({ item }: { item: WorkOrder }) => <WorkOrderCard workOrder={item} />,
-    []
-  );
 
-  const keyExtractor = useCallback((item: WorkOrder) => item.id, []);
 
-  const ListHeader = (
-    <View>
-      {/* Stats Row */}
-      <View style={styles.statsRow}>
-        <StatCard label="Total WOs" value={stats.total} icon="clipboard-outline" color="#1976D2" bg="#EBF4FF" />
-        <StatCard label="Open" value={stats.open} icon="radio-button-on-outline" color="#F57F17" bg="#FFF8E1" />
-        <StatCard label="High / Critical" value={stats.high} icon="warning-outline" color="#C62828" bg="#FEEBEE" />
-        <StatCard label="Acknowledged" value={stats.acknowledged} icon="checkmark-done-outline" color="#2E7D32" bg="#E8F5E9" />
-      </View>
 
-      {/* Search */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={17} color="#8FA8C4" style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search by WO ID, customer, CEID…"
-          placeholderTextColor="#A8BDD4"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={17} color="#8FA8C4" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Filter Chips */}
-      <View style={styles.filterRow}>
-        <Text style={styles.filterLabel}>Severity:</Text>
-        {(['NORMAL', 'HIGH', 'CRITICAL'] as const).map((s) => (
-          <TouchableOpacity
-            key={s}
-            style={[styles.chip, filterSeverity === s && styles.chipActive]}
-            onPress={() => setFilterSeverity(filterSeverity === s ? null : s)}
-          >
-            <Text style={[styles.chipText, filterSeverity === s && styles.chipTextActive]}>{s}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <View style={[styles.filterRow, { marginTop: 0, marginBottom: 4 }]}>
-        <Text style={styles.filterLabel}>Status:   </Text>
-        {(['Open', 'Acknowledged', 'In Progress', 'Closed'] as const).map((s) => (
-          <TouchableOpacity
-            key={s}
-            style={[styles.chip, filterStatus === s && styles.chipActive]}
-            onPress={() => setFilterStatus(filterStatus === s ? null : s)}
-          >
-            <Text style={[styles.chipText, filterStatus === s && styles.chipTextActive]}>{s}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Section Title */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>
-          Work Orders{' '}
-          <Text style={styles.sectionCount}>({filteredOrders.length})</Text>
-        </Text>
-        <View style={styles.sortChip}>
-          <Ionicons name="swap-vertical-outline" size={13} color="#5C7EA8" />
-          <Text style={styles.sortText}>Newest First</Text>
-        </View>
-      </View>
-    </View>
-  );
 
   return (
     <View style={styles.rootContainer}>
@@ -171,29 +94,58 @@ export default function DashboardScreen() {
         </View>
       </SafeAreaView>
 
-      {/* Work Order List */}
-      <FlatList
-        data={filteredOrders}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        ListHeaderComponent={ListHeader}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={60} color="#BBDEFB" />
-            <Text style={styles.emptyTitle}>No Work Orders Found</Text>
-            <Text style={styles.emptySubtitle}>
-              Adjust your filters or create a new work order.
-            </Text>
+      {/* Fixed header area — stats, search, section title */}
+      <View style={styles.dashHeader}>
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <StatCard label="Total WOs" value={stats.total} icon="clipboard-outline" color="#1976D2" bg="#EBF4FF" />
+          <StatCard label="Open" value={stats.open} icon="radio-button-on-outline" color="#F57F17" bg="#FFF8E1" />
+          <StatCard label="High / Critical" value={stats.high} icon="warning-outline" color="#C62828" bg="#FEEBEE" />
+          <StatCard label="Acknowledged" value={stats.acknowledged} icon="checkmark-done-outline" color="#2E7D32" bg="#E8F5E9" />
+        </View>
+
+        {/* Search */}
+        <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={17} color="#8FA8C4" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by WO ID, customer, CEID…"
+            placeholderTextColor="#A8BDD4"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={17} color="#8FA8C4" />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Section title */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>
+            Work Orders{' '}
+            <Text style={styles.sectionCount}>({filteredOrders.length})</Text>
+          </Text>
+          <View style={styles.sortChip}>
+            <Ionicons name="swap-vertical-outline" size={13} color="#5C7EA8" />
+            <Text style={styles.sortText}>Newest First</Text>
           </View>
-        }
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: headerScrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
-      />
+        </View>
+      </View>
+
+      {/* Table — fills remaining space, owns its own scroll */}
+      {filteredOrders.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Ionicons name="document-text-outline" size={60} color="#BBDEFB" />
+          <Text style={styles.emptyTitle}>No Work Orders Found</Text>
+          <Text style={styles.emptySubtitle}>
+            Adjust your filters or create a new work order.
+          </Text>
+        </View>
+      ) : (
+        <WorkOrderTable workOrders={filteredOrders} />
+      )}
 
       {/* FAB: Create WO */}
       <TouchableOpacity
@@ -242,6 +194,9 @@ function StatCard({
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
+    backgroundColor: '#F0F4FF',
+  },
+  dashHeader: {
     backgroundColor: '#F0F4FF',
   },
   safeHeader: {

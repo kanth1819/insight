@@ -281,6 +281,8 @@ const MOCK_WORK_ORDERS: WorkOrder[] = [
 interface WorkOrderContextType {
   workOrders: WorkOrder[];
   addWorkOrder: (wo: WorkOrder) => void;
+  deleteWorkOrder: (id: string) => void;
+  updateWorkOrder: (id: string, updates: Partial<WorkOrder>) => void;
 }
 
 const WorkOrderContext = createContext<WorkOrderContextType | undefined>(undefined);
@@ -292,8 +294,18 @@ export function WorkOrderProvider({ children }: { children: ReactNode }) {
     setWorkOrders((prev) => [wo, ...prev]);
   };
 
+  const deleteWorkOrder = (id: string) => {
+    setWorkOrders((prev) => prev.filter((wo) => wo.id !== id));
+  };
+
+  const updateWorkOrder = (id: string, updates: Partial<WorkOrder>) => {
+    setWorkOrders((prev) =>
+      prev.map((wo) => (wo.id === id ? { ...wo, ...updates } : wo))
+    );
+  };
+
   return (
-    <WorkOrderContext.Provider value={{ workOrders, addWorkOrder }}>
+    <WorkOrderContext.Provider value={{ workOrders, addWorkOrder, deleteWorkOrder, updateWorkOrder }}>
       {children}
     </WorkOrderContext.Provider>
   );
