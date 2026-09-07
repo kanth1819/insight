@@ -1,56 +1,148 @@
-import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  ScrollView,
-  Dimensions,
-  Pressable,
-  Platform,
-} from 'react-native';
+import { FONT_FAMILY } from '@/constants/Typography';
+import { AppColors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useRef, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  Animated,
+  Dimensions,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from 'react-native';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DRAWER_WIDTH = SCREEN_WIDTH * 0.78;
+const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 360);
+
+interface SubMenuItem {
+  key: string;
+  label: string;
+}
 
 interface DrawerMenuItem {
   key: string;
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  hasChevron?: boolean;
+  subItems?: SubMenuItem[];
 }
 
+// ─── 1. Dashboard Sub-Items ───
+const DASHBOARD_SUB_ITEMS: SubMenuItem[] = [
+  { key: 'cec_dashboard', label: 'cec dashboard' },
+  { key: 'cm_workorders', label: 'cm workorders' },
+  { key: 'mutabagani_kpi', label: 'mutabagani kpi' },
+  { key: 'njch_fm_dashboard', label: 'njch fm dashboard' },
+  { key: 'mnh_fm_dashboard', label: 'mnh fm dashboard' },
+  { key: 'csrwo_dashboard', label: 'csrwo dashboard' },
+  { key: 'savings_dashboard', label: 'savings dashboard' },
+  { key: 'manage_daily_pv_1', label: 'manage daily pv' },
+  { key: 'manage_daily_pv_2', label: 'complete bulk pv' },
+];
+
+// ─── 2. Asset Management Sub-Items (AM Menu) ───
+const ASSET_MANAGEMENT_SUB_ITEMS: SubMenuItem[] = [
+  { key: 'am_abhaya_hospital', label: 'abhaya hospital' },
+  { key: 'am_atherya_hospital', label: 'atherya hospital' },
+  { key: 'am_lakshmi_hospital', label: 'lakshmi hospital' },
+  { key: 'am_rathna_medical', label: 'rathna medical' },
+  { key: 'am_dms_hospital', label: 'dms hospital' },
+  { key: 'am_dinesh_hospital', label: 'dinesh hospital' },
+  { key: 'am_add_new_asset', label: 'add new asset' },
+  { key: 'am_test_equipments', label: 'test equipments' },
+  { key: 'am_approve_new_assets', label: 'approve new assets' },
+  { key: 'am_reopened_assets', label: 'reopened assets' },
+  { key: 'am_manuals_library', label: 'manuals library' },
+];
+
+// ─── 3. Service Management Sub-Items (SM Menu) ───
+const SERVICE_MANAGEMENT_SUB_ITEMS: SubMenuItem[] = [
+  { key: 'sm_daily_rounds', label: 'daily rounds' },
+  { key: 'sm_cm_work_orders_list', label: 'cm work orders list' },
+  { key: 'sm_pm_work_orders_list', label: 'pm work orders list' },
+  { key: 'sm_calibration_wo_list', label: 'calibration wo list' },
+  { key: 'sm_cm_wo_history', label: 'cm wo history' },
+  { key: 'sm_pm_wo_history', label: 'pm wo history' },
+  { key: 'sm_approve_cm_wo', label: 'approve cm wo' },
+  { key: 'sm_approve_pm_wo', label: 'approve pm wo' },
+  { key: 'sm_manage_wo_alerts', label: 'manage wo alerts' },
+  { key: 'sm_manage_pm_checklist', label: 'manage pm checklist' },
+  { key: 'sm_manage_projects', label: 'manage projects' },
+];
+
 const MENU_ITEMS: DrawerMenuItem[] = [
-  { key: 'dashboard', label: 'Dashboard', icon: 'grid' },
-  { key: 'asset', label: 'Asset Management', icon: 'server-outline' },
-  { key: 'service', label: 'Service Management', icon: 'construct-outline' },
-  { key: 'sourcing', label: 'Sourcing Management', icon: 'cube-outline' },
-  { key: 'sales', label: 'Sales Management', icon: 'trending-up-outline' },
-  { key: 'admin', label: 'Administration', icon: 'shield-checkmark-outline' },
-  { key: 'superfind', label: 'Super Find', icon: 'search-outline' },
-  { key: 'abgrab', label: 'AbGrab', icon: 'layers-outline' },
-  { key: 'policy', label: 'Know Our Policy', icon: 'document-text-outline' },
-  { key: 'reports', label: 'Advanced Reports', icon: 'bar-chart-outline' },
+  {
+    key: 'dashboard',
+    label: 'dashboard',
+    hasChevron: true,
+    subItems: DASHBOARD_SUB_ITEMS,
+  },
+  {
+    key: 'asset',
+    label: 'asset management',
+    hasChevron: true,
+    subItems: ASSET_MANAGEMENT_SUB_ITEMS,
+  },
+  {
+    key: 'service',
+    label: 'service management',
+    hasChevron: true,
+    subItems: SERVICE_MANAGEMENT_SUB_ITEMS,
+  },
+  { key: 'sourcing', label: 'sourcing management', hasChevron: true },
+  { key: 'sales', label: 'sales management', hasChevron: true },
+  { key: 'admin', label: 'administration', hasChevron: true },
+  { key: 'superfind', label: 'super find', hasChevron: true },
+  { key: 'abgrab', label: 'abgrab', hasChevron: true },
+  { key: 'policy', label: 'know your policy', hasChevron: true },
+  { key: 'reports', label: 'advanced reports', hasChevron: true },
+  { key: 'profile', label: 'profile', hasChevron: true },
 ];
 
 interface DrawerMenuProps {
   visible: boolean;
   onClose: () => void;
   activeItem?: string;
+  onLogout?: () => void;
+  currentUserId?: string | null;
 }
 
-export default function DrawerMenu({ visible, onClose, activeItem = 'dashboard' }: DrawerMenuProps) {
+export default function DrawerMenu({
+  visible,
+  onClose,
+  activeItem = 'dashboard',
+  onLogout,
+  currentUserId,
+}: DrawerMenuProps) {
+  const insets = useSafeAreaInsets();
+  const headerHeight = insets.top + (Platform.OS === 'web' ? 52 : 52);
   const slideAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  // Track expanded menu section (one open at a time like screenshot)
+  const [expandedSection, setExpandedSection] = useState<string | null>('dashboard');
+
+  const toggleSection = (key: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedSection((prev) => (prev === key ? null : key));
+  };
 
   useEffect(() => {
     if (visible) {
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
-          tension: 60,
-          friction: 10,
+          tension: 65,
+          friction: 11,
           useNativeDriver: true,
         }),
         Animated.timing(backdropAnim, {
@@ -75,91 +167,121 @@ export default function DrawerMenu({ visible, onClose, activeItem = 'dashboard' 
     }
   }, [visible]);
 
-  if (!visible && Platform.OS !== 'web') {
-    // Still render but invisible so animation can play
-  }
+  const displayUserName = currentUserId
+    ? currentUserId === '001'
+      ? 'user one'
+      : currentUserId === '002'
+        ? 'user two'
+        : currentUserId === '003'
+          ? 'user three'
+          : `user ${currentUserId}`
+    : 'user one';
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Frosted / Translucent Blurred Backdrop */}
       <Animated.View
         pointerEvents={visible ? 'auto' : 'none'}
-        style={[styles.backdrop, { opacity: backdropAnim }]}
+        style={[
+          styles.backdrop,
+          {
+            opacity: backdropAnim,
+          },
+        ]}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
       </Animated.View>
 
-      {/* Drawer Panel */}
-      <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
-        {/* Header */}
-        <View style={styles.drawerHeader}>
-          <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Ionicons name="pulse" size={22} color="#fff" />
-            </View>
-            <View>
-              <Text style={styles.logoTitle}>MEDVICE</Text>
-              <Text style={styles.logoSubtitle}>SOLUTIONS</Text>
-            </View>
+      {/* Floating Glassmorphic Drawer Panel */}
+      <Animated.View
+        style={[
+          styles.drawer,
+          {
+            top: headerHeight,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
+      >
+        {/* User Profile Header - Heading: Muli Bold lowercase */}
+        <View style={styles.userHeader}>
+          <View style={styles.avatarIconWrap}>
+            <Ionicons name="person" size={38} color="#000000" />
           </View>
-          <TouchableOpacity onPress={onClose} style={styles.closeBtn} accessibilityLabel="Close menu">
-            <Ionicons name="close" size={22} color="#1976D2" />
-          </TouchableOpacity>
+          <Text style={styles.userName}>{displayUserName}</Text>
         </View>
 
-        {/* User info strip */}
-        <View style={styles.userStrip}>
-          <View style={styles.avatarMini}>
-            <Ionicons name="person" size={18} color="#1976D2" />
-          </View>
-          <View style={{ marginLeft: 10 }}>
-            <Text style={styles.userName}>Field Engineer</Text>
-            <Text style={styles.userRole}>Biomedical Services</Text>
-          </View>
-        </View>
+        {/* Menu Items Scroll Container */}
+        <ScrollView
+          style={styles.menuScroll}
+          contentContainerStyle={styles.menuScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {MENU_ITEMS.map((item) => {
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            const isExpanded = expandedSection === item.key;
 
-        {/* Divider */}
-        <View style={styles.divider} />
-
-        {/* Menu Items */}
-        <ScrollView style={styles.menuScroll} showsVerticalScrollIndicator={false}>
-          {MENU_ITEMS.map((item, index) => {
-            const isActive = item.key === activeItem;
             return (
-              <TouchableOpacity
-                key={item.key}
-                style={[styles.menuItem, isActive && styles.menuItemActive]}
-                onPress={() => {
-                  // In a real app, navigate to the respective screen
-                  onClose();
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.menuIconWrap, isActive && styles.menuIconWrapActive]}>
-                  <Ionicons
-                    name={item.icon}
-                    size={18}
-                    color={isActive ? '#fff' : '#5C7EA8'}
-                  />
-                </View>
-                <Text style={[styles.menuLabel, isActive && styles.menuLabelActive]}>
-                  {item.label}
-                </Text>
-                {isActive && (
-                  <View style={styles.activeIndicator} />
+              <View key={item.key} style={styles.menuItemGroup}>
+                {/* Main Item Row */}
+                <TouchableOpacity
+                  style={[styles.menuItemRow, isExpanded && styles.menuItemRowActive]}
+                  onPress={() => {
+                    if (hasSubItems) {
+                      toggleSection(item.key);
+                    } else {
+                      onClose();
+                    }
+                  }}
+                  activeOpacity={0.65}
+                >
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  {item.hasChevron !== false && (
+                    <Ionicons
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color="#0F172A"
+                    />
+                  )}
+                </TouchableOpacity>
+
+                {/* Floating Glassy Sub-menu Card */}
+                {hasSubItems && isExpanded && (
+                  <View style={styles.subItemsCard}>
+                    {item.subItems!.map((sub, sIdx) => (
+                      <TouchableOpacity
+                        key={`${sub.key}_${sIdx}`}
+                        style={styles.subItemRow}
+                        onPress={() => {
+                          onClose();
+                        }}
+                        activeOpacity={0.65}
+                      >
+                        <Text style={styles.subItemLabel}>{sub.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 )}
-              </TouchableOpacity>
+              </View>
             );
           })}
 
-          <View style={{ height: 30 }} />
-        </ScrollView>
+          {/* Logout Action Button */}
+          {onLogout && (
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={() => {
+                onClose();
+                onLogout();
+              }}
+              activeOpacity={0.7}
+              accessibilityLabel="logout"
+            >
+              <Text style={styles.logoutText}>logout</Text>
+            </TouchableOpacity>
+          )}
 
-        {/* Footer */}
-        <View style={styles.drawerFooter}>
-          <Ionicons name="information-circle-outline" size={14} color="#999" />
-          <Text style={styles.footerText}> v2.4.1 • Medvice Solutions Ltd.</Text>
-        </View>
+          <View style={{ height: 40 }} />
+        </ScrollView>
       </Animated.View>
     </>
   );
@@ -168,156 +290,121 @@ export default function DrawerMenu({ visible, onClose, activeItem = 'dashboard' 
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(10, 25, 50, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+    backdropFilter: 'blur(20px) saturate(180%)' as any,
     zIndex: 100,
   },
   drawer: {
     position: 'absolute',
     left: 0,
-    top: 0,
     bottom: 0,
     width: DRAWER_WIDTH,
-    backgroundColor: '#fff',
+    backgroundColor: Platform.select({
+      web: 'rgba(255, 255, 255, 0.98)',
+      default: '#FFFFFF',
+    }),
     zIndex: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 20,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 6, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 16,
+    borderTopRightRadius: 4,
+    borderBottomRightRadius: 4,
   },
-  drawerHeader: {
+  userHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 16,
-    backgroundColor: '#F0F7FF',
+    paddingHorizontal: 22,
+    paddingTop: 18,
+    paddingBottom: 20,
+    gap: 14,
   },
-  logoContainer: {
-    flexDirection: 'row',
+  avatarIconWrap: {
+    width: 48,
+    height: 48,
     alignItems: 'center',
-    gap: 10,
-  },
-  logoIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#1976D2',
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  logoTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1976D2',
-    letterSpacing: 2,
-  },
-  logoSubtitle: {
-    fontSize: 9,
-    color: '#5C7EA8',
-    letterSpacing: 3,
-    fontWeight: '600',
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#E3F2FD',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: '#F0F7FF',
-  },
-  avatarMini: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#E3F2FD',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#90CAF9',
-  },
+  // Heading: Muli Bold lowercase
   userName: {
-    fontSize: 13,
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#1A2E4A',
-  },
-  userRole: {
-    fontSize: 11,
-    color: '#5C7EA8',
-    fontWeight: '500',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E8F0F8',
-    marginHorizontal: 0,
+    color: '#0F172A',
+    textTransform: 'lowercase',
+    letterSpacing: -0.3,
   },
   menuScroll: {
     flex: 1,
-    paddingTop: 10,
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  menuScrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 10,
-    marginVertical: 2,
-    borderRadius: 12,
-    position: 'relative',
+    paddingTop: 2,
   },
-  menuItemActive: {
-    backgroundColor: '#EBF4FF',
+  menuItemGroup: {
+    marginBottom: 2,
   },
-  menuIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: '#F0F4FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  menuIconWrapActive: {
-    backgroundColor: '#1976D2',
-  },
-  menuLabel: {
-    fontSize: 14,
-    color: '#3A4A5C',
-    fontWeight: '500',
-    flex: 1,
-  },
-  menuLabelActive: {
-    color: '#1976D2',
-    fontWeight: '700',
-  },
-  activeIndicator: {
-    width: 4,
-    height: 20,
-    borderRadius: 2,
-    backgroundColor: '#1976D2',
-    position: 'absolute',
-    right: 0,
-    top: '50%',
-    marginTop: -10,
-  },
-  drawerFooter: {
+  menuItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E8F0F8',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 8,
   },
-  footerText: {
-    fontSize: 11,
-    color: '#aaa',
+  menuItemRowActive: {
+    backgroundColor: '#F8FAFC',
+  },
+  // Heading / Item: Muli Bold lowercase
+  menuLabel: {
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 15.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    textTransform: 'lowercase',
+    letterSpacing: -0.2,
+  },
+  // Floating sub-items card container
+  subItemsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginVertical: 4,
+    borderWidth: 1,
+    borderColor: '#E8ECF2',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  subItemRow: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  // Sub-items: Muli Bold lowercase
+  subItemLabel: {
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: '#0F172A',
+    textTransform: 'lowercase',
+    letterSpacing: -0.2,
+  },
+  logoutBtn: {
+    paddingTop: 24,
+    paddingBottom: 16,
+    paddingHorizontal: 8,
+  },
+  // Heading: Muli Bold lowercase
+  logoutText: {
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#EF4444',
+    textTransform: 'lowercase',
+    letterSpacing: -0.3,
   },
 });

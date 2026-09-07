@@ -6,445 +6,284 @@ import {
   TouchableOpacity,
   StatusBar,
   TextInput,
+  ScrollView,
+  Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { useWorkOrders } from '@/context/WorkOrderContext';
+import { useAuth } from '@/context/AuthContext';
+import { useResponsive } from '@/hooks/useResponsive';
+import { FONT_FAMILY } from '@/constants/Typography';
+import { AppColors, AppShadows, BorderRadius } from '@/constants/theme';
+import { AppHeader, EmptyState } from '@/components/ui';
 import DrawerMenu from '@/components/DrawerMenu';
+import WorkOrderCard from '@/components/WorkOrderCard';
 import WorkOrderTable from '@/components/WorkOrderTable';
+
+type FilterTab = 'ALL' | 'OPEN' | 'ACKNOWLEDGED' | 'COMPLETED';
 
 export default function DashboardScreen() {
   const router = useRouter();
   const { workOrders } = useWorkOrders();
+  const { isLoggedIn, currentUserId, logout } = useAuth();
+  const { isDesktop, contentMaxWidth } = useResponsive();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
+
+  if (!isLoggedIn) return null;
 
   const filteredOrders = workOrders.filter((wo) => {
-    const q = searchQuery.toLowerCase();
+    // Status Filter
+    if (activeTab === 'COMPLETED') {
+      if (wo.status !== 'Completed' && wo.status !== 'Closed') return false;
+    } else if (activeTab === 'OPEN') {
+      if (wo.status !== 'Open') return false;
+    } else if (activeTab === 'ACKNOWLEDGED') {
+      if (wo.status !== 'Acknowledged') return false;
+    }
+
+    // Search Filter
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return true;
     return (
-      !q ||
-      wo.id.includes(q) ||
+      wo.id.toLowerCase().includes(q) ||
       wo.customer.toLowerCase().includes(q) ||
-      wo.ceid.toLowerCase().includes(q) ||
-      wo.woTech.toLowerCase().includes(q) ||
       wo.department.toLowerCase().includes(q) ||
-      wo.reportedProblem.toLowerCase().includes(q)
+      wo.reportedProblem.toLowerCase().includes(q) ||
+      wo.woTech.toLowerCase().includes(q) ||
+      wo.woType.toLowerCase().includes(q) ||
+      wo.severity.toLowerCase().includes(q)
     );
   });
 
-  const stats = {
-    total: workOrders.length,
-    open: workOrders.filter((w) => w.status === 'Open').length,
-    high: workOrders.filter((w) => w.severity === 'HIGH' || w.severity === 'CRITICAL').length,
-    acknowledged: workOrders.filter((w) => w.status === 'Acknowledged').length,
-  };
-
-
-
-
-
   return (
-    <View style={styles.rootContainer}>
-      <StatusBar barStyle="light-content" backgroundColor="#1565C0" />
+    <View style={styles.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Top Header */}
-      <SafeAreaView edges={['top']} style={styles.safeHeader}>
-        <View style={styles.header}>
+      {/* Top Header with Reusable AppHeader */}
+      <AppHeader
+        showLogo
+        leftType="menu"
+        isMenuOpen={drawerOpen}
+        onLeftPress={() => setDrawerOpen((prev) => !prev)}
+        rightAction={
           <TouchableOpacity
-            onPress={() => setDrawerOpen(true)}
-            style={styles.headerBtn}
-            accessibilityLabel="Open menu"
+            onPress={() => router.push('/assign')}
+            style={styles.plusBtn}
+            accessibilityLabel="create work order"
+            activeOpacity={0.85}
           >
-            <Ionicons name="menu" size={24} color="#fff" />
+            <Ionicons name="add" size={24} color="#FFFFFF" />
           </TouchableOpacity>
+        }
+      />
 
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerBrand}>MEDVICE</Text>
-            <Text style={styles.headerSub}>SOLUTIONS</Text>
-          </View>
-
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              onPress={() => router.push('/assign')}
-              style={[styles.headerBtn, styles.headerBtnPrimary]}
-              accessibilityLabel="Create Work Order"
-            >
-              <Ionicons name="headset-outline" size={20} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.headerBtn} accessibilityLabel="Menu grid">
-              <Ionicons name="apps-outline" size={20} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.avatarBtn} accessibilityLabel="Profile">
-              <Ionicons name="person" size={16} color="#1976D2" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Blue band subtitle */}
-        <View style={styles.subBand}>
-          <Ionicons name="pulse-outline" size={13} color="#90CAF9" />
-          <Text style={styles.subBandText}> Work Orders Dashboard</Text>
-          <View style={{ flex: 1 }} />
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>Live</Text>
-          </View>
-        </View>
-      </SafeAreaView>
-
-      {/* Fixed header area — stats, search, section title */}
-      <View style={styles.dashHeader}>
-        {/* Stats Row */}
-        <View style={styles.statsRow}>
-          <StatCard label="Total WOs" value={stats.total} icon="clipboard-outline" color="#1976D2" bg="#EBF4FF" />
-          <StatCard label="Open" value={stats.open} icon="radio-button-on-outline" color="#F57F17" bg="#FFF8E1" />
-          <StatCard label="High / Critical" value={stats.high} icon="warning-outline" color="#C62828" bg="#FEEBEE" />
-          <StatCard label="Acknowledged" value={stats.acknowledged} icon="checkmark-done-outline" color="#2E7D32" bg="#E8F5E9" />
-        </View>
-
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={17} color="#8FA8C4" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by WO ID, customer, CEID…"
-            placeholderTextColor="#A8BDD4"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={17} color="#8FA8C4" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Section title */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            Work Orders{' '}
-            <Text style={styles.sectionCount}>({filteredOrders.length})</Text>
-          </Text>
-          <View style={styles.sortChip}>
-            <Ionicons name="swap-vertical-outline" size={13} color="#5C7EA8" />
-            <Text style={styles.sortText}>Newest First</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Table — fills remaining space, owns its own scroll */}
-      {filteredOrders.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Ionicons name="document-text-outline" size={60} color="#BBDEFB" />
-          <Text style={styles.emptyTitle}>No Work Orders Found</Text>
-          <Text style={styles.emptySubtitle}>
-            Adjust your filters or create a new work order.
-          </Text>
-        </View>
-      ) : (
-        <WorkOrderTable workOrders={filteredOrders} />
-      )}
-
-      {/* FAB: Create WO */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/assign')}
-        accessibilityLabel="Create new work order"
-        activeOpacity={0.85}
+      {/* Main Content Area */}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[
+          styles.scrollContent,
+          contentMaxWidth ? { maxWidth: contentMaxWidth, alignSelf: 'center', width: '100%' } : {},
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+        {/* Search Bar */}
+        <View style={styles.searchBarWrap}>
+          <View style={styles.searchBar}>
+            <Ionicons
+              name="search-outline"
+              size={19}
+              color={AppColors.textMuted}
+              style={styles.searchIcon}
+            />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="search work orders..."
+              placeholderTextColor={AppColors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                style={styles.clearSearchBtn}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={18} color={AppColors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
-      {/* Drawer */}
+        {/* Filter Chips Bar */}
+        <View style={styles.filterPillsWrap}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterPillsScroll}
+          >
+            {(['ALL', 'OPEN', 'ACKNOWLEDGED', 'COMPLETED'] as FilterTab[]).map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <TouchableOpacity
+                  key={tab}
+                  style={[styles.filterPill, isActive && styles.filterPillActive]}
+                  onPress={() => setActiveTab(tab)}
+                  activeOpacity={0.8}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      isActive && styles.filterPillTextActive,
+                    ]}
+                  >
+                    {tab}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Work Orders List */}
+        {filteredOrders.length === 0 ? (
+          <EmptyState
+            icon="document-text-outline"
+            title="no work orders found"
+            subtitle={
+              searchQuery
+                ? `no results matching "${searchQuery}".`
+                : `there are currently no "${activeTab.toLowerCase()}" work orders.`
+            }
+            actionText={
+              searchQuery !== '' || activeTab !== 'ALL'
+                ? 'SHOW ALL WORK ORDERS'
+                : undefined
+            }
+            onAction={() => {
+              setSearchQuery('');
+              setActiveTab('ALL');
+            }}
+          />
+        ) : isDesktop ? (
+          <WorkOrderTable workOrders={filteredOrders} />
+        ) : (
+          <View style={styles.cardList}>
+            {filteredOrders.map((order) => (
+              <WorkOrderCard key={order.id} workOrder={order} />
+            ))}
+          </View>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      {/* Side Navigation Drawer Menu */}
       <DrawerMenu
         visible={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         activeItem="dashboard"
+        onLogout={() => {
+          logout();
+          router.replace('/login' as any);
+        }}
+        currentUserId={currentUserId}
       />
     </View>
   );
 }
 
-function StatCard({
-  label,
-  value,
-  icon,
-  color,
-  bg,
-}: {
-  label: string;
-  value: number;
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  bg: string;
-}) {
-  return (
-    <View style={[styles.statCard, { backgroundColor: bg }]}>
-      <View style={[styles.statIconWrap, { backgroundColor: color + '22' }]}>
-        <Ionicons name={icon} size={18} color={color} />
-      </View>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  rootContainer: {
+  root: {
     flex: 1,
-    backgroundColor: '#F0F4FF',
+    backgroundColor: AppColors.background,
   },
-  dashHeader: {
-    backgroundColor: '#F0F4FF',
-  },
-  safeHeader: {
-    backgroundColor: '#1565C0',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#1565C0',
-  },
-  headerBtn: {
+  plusBtn: {
     width: 38,
     height: 38,
-    borderRadius: 10,
+    borderRadius: BorderRadius.md,
+    backgroundColor: AppColors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    ...AppShadows.primaryGlow,
   },
-  headerBtnPrimary: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 10,
+  scrollContent: {
+    paddingTop: 12,
+    paddingBottom: 24,
   },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerBrand: {
-    fontSize: 17,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: 3,
-  },
-  headerSub: {
-    fontSize: 8,
-    color: '#90CAF9',
-    letterSpacing: 4,
-    fontWeight: '600',
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  avatarBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 4,
-    borderWidth: 2,
-    borderColor: '#90CAF9',
-  },
-  subBand: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  searchBarWrap: {
     paddingHorizontal: 16,
-    paddingBottom: 10,
-    backgroundColor: '#1565C0',
+    marginBottom: 12,
   },
-  subBandText: {
-    fontSize: 12,
-    color: '#90CAF9',
-    fontWeight: '600',
-  },
-  liveIndicator: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    gap: 4,
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#69F0AE',
-  },
-  liveText: {
-    fontSize: 10,
-    color: '#69F0AE',
-    fontWeight: '700',
-  },
-  listContent: {
-    paddingBottom: 100,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingTop: 16,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 14,
-    padding: 10,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  statLabel: {
-    fontSize: 9,
-    color: '#7A90A8',
-    textAlign: 'center',
-    fontWeight: '600',
-    letterSpacing: 0.2,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    marginHorizontal: 16,
-    marginVertical: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    shadowColor: '#1976D2',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 6,
-    elevation: 3,
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.xxl,
+    borderWidth: 1.2,
+    borderColor: AppColors.border,
+    height: 48,
+    paddingHorizontal: 16,
+    ...AppShadows.subtle,
   },
   searchIcon: {
-    marginRight: 8,
+    marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    fontSize: 14,
-    color: '#1A2E4A',
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 14.5,
+    color: AppColors.textPrimary,
+    textTransform: 'lowercase',
+    outlineStyle: 'none' as any,
   },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  clearSearchBtn: {
+    padding: 4,
+  },
+  filterPillsWrap: {
+    marginBottom: 14,
+  },
+  filterPillsScroll: {
     paddingHorizontal: 16,
-    marginBottom: 8,
-    flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
+    flexDirection: 'row',
   },
-  filterLabel: {
-    fontSize: 11,
-    color: '#8FA8C4',
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    backgroundColor: '#fff',
+  filterPill: {
+    paddingHorizontal: 18,
+    paddingVertical: 7,
+    borderRadius: BorderRadius.xxl,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#D0E4F7',
-  },
-  chipActive: {
-    backgroundColor: '#1976D2',
-    borderColor: '#1976D2',
-  },
-  chipText: {
-    fontSize: 11,
-    color: '#5C7EA8',
-    fontWeight: '600',
-  },
-  chipTextActive: {
-    color: '#fff',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
+    borderColor: AppColors.border,
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1A2E4A',
-    flex: 1,
-  },
-  sectionCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#5C7EA8',
-  },
-  sortChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E3F2FD',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
-    gap: 4,
-  },
-  sortText: {
-    fontSize: 11,
-    color: '#5C7EA8',
-    fontWeight: '600',
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 32,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A2E4A',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 13,
-    color: '#8FA8C4',
-    textAlign: 'center',
-    lineHeight: 19,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 28,
-    right: 20,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#1976D2',
     justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#1976D2',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 12,
-    elevation: 10,
+    ...AppShadows.subtle,
+  },
+  filterPillActive: {
+    backgroundColor: AppColors.primary,
+    borderColor: AppColors.primary,
+    ...AppShadows.primaryGlow,
+  },
+  // Subheading: MULI BOLD CAPS
+  filterPillText: {
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 12,
+    fontWeight: '800',
+    color: AppColors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  filterPillTextActive: {
+    color: '#FFFFFF',
+  },
+  cardList: {
+    flex: 1,
   },
 });

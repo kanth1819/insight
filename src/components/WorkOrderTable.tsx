@@ -1,31 +1,31 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import { Severity, useWorkOrders, WorkOrder, WOStatus } from '@/context/WorkOrderContext';
+import { FONT_FAMILY } from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { WorkOrder, Severity, WOStatus } from '@/context/WorkOrderContext';
-import { useWorkOrders } from '@/context/WorkOrderContext';
+import React from 'react';
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // ─── Column widths (in px) ─────────────────────────────────────────
 const COL = {
-  wo: 74,
-  woType: 54,
-  woTech: 120,
-  ceid: 90,
-  customer: 140,
-  department: 110,
-  reported: 200,
-  verified: 200,
-  severity: 80,
-  status: 108,
+  wo: 95,
+  woType: 70,
+  woTech: 135,
+  ceid: 100,
+  customer: 160,
+  department: 125,
+  reported: 240,
+  verified: 220,
+  severity: 100,
+  status: 125,
   woDate: 110,
-  del: 44,
+  actions: 90,
 };
 
 const TOTAL_W =
@@ -40,29 +40,30 @@ const TOTAL_W =
   COL.severity +
   COL.status +
   COL.woDate +
-  COL.del;
+  COL.actions;
 
 // ─── Severity colour map ───────────────────────────────────────────
-const SEV: Record<Severity, { bg: string; text: string }> = {
-  NORMAL: { bg: '#E8F5E9', text: '#2E7D32' },
-  HIGH: { bg: '#FFF3E0', text: '#E65100' },
-  CRITICAL: { bg: '#FEEBEE', text: '#C62828' },
+const SEV: Record<Severity, { bg: string; text: string; border: string }> = {
+  NORMAL: { bg: '#ECFDF5', text: '#065F46', border: '#A7F3D0' },
+  HIGH:   { bg: '#FFFBEB', text: '#92400E', border: '#FDE68A' },
+  CRITICAL: { bg: '#FEF2F2', text: '#991B1B', border: '#FECACA' },
 };
 
 // ─── Status colour map ─────────────────────────────────────────────
-const STA: Record<WOStatus, { dot: string; text: string }> = {
-  Open: { dot: '#F9A825', text: '#F57F17' },
-  Acknowledged: { dot: '#1976D2', text: '#1565C0' },
-  'In Progress': { dot: '#673AB7', text: '#4527A0' },
-  Closed: { dot: '#558B2F', text: '#33691E' },
+const STA: Record<WOStatus, { bg: string; dot: string; text: string; border: string }> = {
+  Open:         { bg: '#FFFBEB', dot: '#D97706', text: '#92400E', border: '#FDE68A' },
+  Acknowledged: { bg: '#EFF6FF', dot: '#2563EB', text: '#1E40AF', border: '#BFDBFE' },
+  'In Progress':{ bg: '#F5F3FF', dot: '#7C3AED', text: '#5B21B6', border: '#DDD6FE' },
+  Closed:       { bg: '#ECFDF5', dot: '#10B981', text: '#065F46', border: '#A7F3D0' },
+  Completed:    { bg: '#ECFDF5', dot: '#10B981', text: '#065F46', border: '#A7F3D0' },
 };
 
 // ─── WO Type colour map ────────────────────────────────────────────
 const WOT: Record<string, { bg: string; text: string }> = {
-  CM: { bg: '#FCE4EC', text: '#C2185B' },
-  PV: { bg: '#E8F5E9', text: '#1B5E20' },
-  PM: { bg: '#E3F2FD', text: '#0D47A1' },
-  IS: { bg: '#FFF3E0', text: '#BF360C' },
+  CM: { bg: '#FFF1F2', text: '#BE123C' },
+  PV: { bg: '#F0FDF4', text: '#15803D' },
+  PM: { bg: '#EFF6FF', text: '#1D4ED8' },
+  IS: { bg: '#FFFBEB', text: '#B45309' },
 };
 
 // ─── Generic Cell ──────────────────────────────────────────────────
@@ -88,18 +89,18 @@ function Cell({
 function TableHeader() {
   return (
     <View style={styles.headerRow}>
-      <Cell w={COL.wo} header>WO #</Cell>
-      <Cell w={COL.woType} header>Type</Cell>
-      <Cell w={COL.woTech} header>WO Tech</Cell>
+      <Cell w={COL.wo} header>WO NUMBER</Cell>
+      <Cell w={COL.woType} header>TYPE</Cell>
+      <Cell w={COL.status} header center>STATUS</Cell>
+      <Cell w={COL.severity} header center>SEVERITY</Cell>
+      <Cell w={COL.woTech} header>ASSIGNED TECH</Cell>
       <Cell w={COL.ceid} header>CEID</Cell>
-      <Cell w={COL.customer} header>Customer</Cell>
-      <Cell w={COL.department} header>Department</Cell>
-      <Cell w={COL.reported} header>Reported Problem</Cell>
-      <Cell w={COL.verified} header>Verified Problem</Cell>
-      <Cell w={COL.severity} header center>Severity</Cell>
-      <Cell w={COL.status} header center>Status</Cell>
-      <Cell w={COL.woDate} header>WO Date</Cell>
-      <Cell w={COL.del} header center>{''}</Cell>
+      <Cell w={COL.customer} header>CUSTOMER / SITE</Cell>
+      <Cell w={COL.department} header>DEPARTMENT</Cell>
+      <Cell w={COL.reported} header>REPORTED ISSUE</Cell>
+      <Cell w={COL.verified} header>VERIFIED DIAGNOSTICS</Cell>
+      <Cell w={COL.woDate} header>CREATED DATE</Cell>
+      <Cell w={COL.actions} header center>ACTIONS</Cell>
     </View>
   );
 }
@@ -110,17 +111,17 @@ function TableRow({ workOrder, index }: { workOrder: WorkOrder; index: number })
   const { deleteWorkOrder } = useWorkOrders();
   const sev = SEV[workOrder.severity] ?? SEV.NORMAL;
   const sta = STA[workOrder.status] ?? STA.Open;
-  const wot = WOT[workOrder.woType] ?? { bg: '#F5F5F5', text: '#424242' };
+  const wot = WOT[workOrder.woType] ?? { bg: '#F1F5F9', text: '#334155' };
   const isEven = index % 2 === 0;
 
   const handleDelete = () => {
     Alert.alert(
-      'Delete Work Order',
-      `Remove WO #${workOrder.id} from the list?`,
+      'delete work order',
+      `are you sure you want to permanently remove wo #${workOrder.id}?`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: 'cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'delete',
           style: 'destructive',
           onPress: () => deleteWorkOrder(workOrder.id),
         },
@@ -128,14 +129,20 @@ function TableRow({ workOrder, index }: { workOrder: WorkOrder; index: number })
     );
   };
 
+  const handleOpenDetail = () => {
+    router.push({ pathname: '/workorder/[id]', params: { id: workOrder.id } });
+  };
+
   return (
     <View style={[styles.dataRow, isEven ? styles.rowEven : styles.rowOdd]}>
-      {/* WO # — tappable link */}
+      {/* WO # — tappable pill badge */}
       <View style={[styles.cell, { width: COL.wo }]}>
         <TouchableOpacity
-          onPress={() => router.push({ pathname: '/workorder/[id]', params: { id: workOrder.id } })}
-          accessibilityLabel={`Open WO ${workOrder.id}`}>
-          <Text style={styles.woIdText}>{workOrder.id}</Text>
+          onPress={handleOpenDetail}
+          style={styles.woIdBtn}
+          accessibilityLabel={`open wo ${workOrder.id}`}
+        >
+          <Text style={styles.woIdText}>#{workOrder.id}</Text>
         </TouchableOpacity>
       </View>
 
@@ -146,51 +153,60 @@ function TableRow({ workOrder, index }: { workOrder: WorkOrder; index: number })
         </View>
       </View>
 
-      {/* WO Tech */}
-      <View style={[styles.cell, { width: COL.woTech }]}>
-        <Text style={styles.techText} numberOfLines={2}>{workOrder.woTech}</Text>
-      </View>
-
-      {/* CEID */}
-      <View style={[styles.cell, { width: COL.ceid }]}>
-        <Text style={styles.ceidText}>{workOrder.ceid}</Text>
-      </View>
-
-      {/* Customer */}
-      <View style={[styles.cell, { width: COL.customer }]}>
-        <Text style={styles.cellText} numberOfLines={2}>{workOrder.customer}</Text>
-      </View>
-
-      {/* Department */}
-      <View style={[styles.cell, { width: COL.department }]}>
-        <Text style={styles.cellText} numberOfLines={2}>{workOrder.department}</Text>
-      </View>
-
-      {/* Reported Problem */}
-      <View style={[styles.cell, { width: COL.reported }]}>
-        <Text style={styles.problemText} numberOfLines={3}>{workOrder.reportedProblem}</Text>
-      </View>
-
-      {/* Verified Problem */}
-      <View style={[styles.cell, { width: COL.verified }]}>
-        <Text style={styles.verifiedText} numberOfLines={3}>
-          {workOrder.verifiedProblem || '—'}
-        </Text>
+      {/* Status */}
+      <View style={[styles.cell, { width: COL.status, alignItems: 'center' }]}>
+        <View style={[styles.statusPill, { backgroundColor: sta.bg, borderColor: sta.border }]}>
+          <View style={[styles.statusDot, { backgroundColor: sta.dot }]} />
+          <Text style={[styles.statusText, { color: sta.text }]}>{workOrder.status.toUpperCase()}</Text>
+        </View>
       </View>
 
       {/* Severity */}
       <View style={[styles.cell, { width: COL.severity, alignItems: 'center' }]}>
-        <View style={[styles.sevBadge, { backgroundColor: sev.bg }]}>
+        <View style={[styles.sevBadge, { backgroundColor: sev.bg, borderColor: sev.border }]}>
           <Text style={[styles.sevText, { color: sev.text }]}>{workOrder.severity}</Text>
         </View>
       </View>
 
-      {/* Status */}
-      <View style={[styles.cell, { width: COL.status, alignItems: 'center' }]}>
-        <View style={styles.statusRow}>
-          <View style={[styles.statusDot, { backgroundColor: sta.dot }]} />
-          <Text style={[styles.statusText, { color: sta.text }]}>{workOrder.status}</Text>
+      {/* WO Tech */}
+      <View style={[styles.cell, { width: COL.woTech }]}>
+        <View style={styles.techRow}>
+          <View style={styles.techAvatar}>
+            <Text style={styles.techAvatarText}>
+              {workOrder.woTech ? workOrder.woTech.charAt(0).toUpperCase() : 'U'}
+            </Text>
+          </View>
+          <Text style={styles.techText} numberOfLines={1}>{workOrder.woTech?.toLowerCase() || 'unassigned'}</Text>
         </View>
+      </View>
+
+      {/* CEID */}
+      <View style={[styles.cell, { width: COL.ceid }]}>
+        <View style={styles.ceidBadge}>
+          <Text style={styles.ceidText}>{workOrder.ceid}</Text>
+        </View>
+      </View>
+
+      {/* Customer */}
+      <View style={[styles.cell, { width: COL.customer }]}>
+        <Text style={styles.customerText} numberOfLines={2}>{workOrder.customer.toLowerCase()}</Text>
+      </View>
+
+      {/* Department */}
+      <View style={[styles.cell, { width: COL.department }]}>
+        <Text style={styles.deptText} numberOfLines={1}>{workOrder.department.toLowerCase()}</Text>
+      </View>
+
+      {/* Reported Problem */}
+      <View style={[styles.cell, { width: COL.reported }]}>
+        <Text style={styles.problemText} numberOfLines={2}>{workOrder.reportedProblem.toLowerCase()}</Text>
+      </View>
+
+      {/* Verified Problem */}
+      <View style={[styles.cell, { width: COL.verified }]}>
+        <Text style={styles.verifiedText} numberOfLines={2}>
+          {workOrder.verifiedProblem?.toLowerCase() || '—'}
+        </Text>
       </View>
 
       {/* WO Date */}
@@ -198,11 +214,24 @@ function TableRow({ workOrder, index }: { workOrder: WorkOrder; index: number })
         <Text style={styles.dateText}>{workOrder.woDate}</Text>
       </View>
 
-      {/* Delete */}
-      <View style={[styles.cell, { width: COL.del, alignItems: 'center' }]}>
-        <TouchableOpacity onPress={handleDelete} style={styles.deleteBtn} accessibilityLabel={`Delete WO ${workOrder.id}`}>
-          <Ionicons name="trash-outline" size={15} color="#E53935" />
-        </TouchableOpacity>
+      {/* Actions (View + Delete) */}
+      <View style={[styles.cell, { width: COL.actions, alignItems: 'center' }]}>
+        <View style={styles.actionButtonsRow}>
+          <TouchableOpacity
+            onPress={handleOpenDetail}
+            style={styles.viewBtn}
+            accessibilityLabel={`view wo ${workOrder.id}`}
+          >
+            <Ionicons name="open-outline" size={15} color="#1E3A5F" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleDelete}
+            style={styles.deleteBtn}
+            accessibilityLabel={`delete wo ${workOrder.id}`}
+          >
+            <Ionicons name="trash-outline" size={14} color="#DC2626" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -221,12 +250,20 @@ export default function WorkOrderTable({ workOrders, emptyComponent }: WorkOrder
 
   return (
     <View style={styles.wrapper}>
-      {/* Title bar */}
-      <View style={styles.titleBar}>
-        <Ionicons name="document-text-outline" size={14} color="#90CAF9" />
-        <Text style={styles.titleText}> Work Orders ▼</Text>
-        <View style={{ flex: 1 }} />
-        <Text style={styles.titleHint}>Scroll ↔</Text>
+      {/* Table Top Bar */}
+      <View style={styles.tableTopBar}>
+        <View style={styles.tableTitleGroup}>
+          <Ionicons name="layers-outline" size={15} color="#1E3A5F" />
+          {/* Heading: Muli Bold lowercase */}
+          <Text style={styles.tableTopTitle}>work orders master table</Text>
+          <View style={styles.activePill}>
+            <Text style={styles.activePillText}>{workOrders.length} active</Text>
+          </View>
+        </View>
+        <View style={styles.scrollHintWrap}>
+          <Ionicons name="swap-horizontal" size={12} color="#64748B" />
+          <Text style={styles.scrollHintText}>horizontal scroll available</Text>
+        </View>
       </View>
 
       {/* Horizontally scrollable table */}
@@ -252,149 +289,262 @@ export default function WorkOrderTable({ workOrders, emptyComponent }: WorkOrder
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: '#1976D2',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 5,
-    marginTop: 4,
-    marginHorizontal: 12,
-    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+    marginBottom: 16,
   },
-  titleBar: {
+  tableTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1565C0',
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  titleText: {
-    color: '#fff',
+  tableTitleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  // Heading: Muli Bold lowercase
+  tableTopTitle: {
+    fontFamily: FONT_FAMILY.bold,
+    color: '#0F172A',
     fontSize: 13,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    textTransform: 'lowercase',
+    letterSpacing: 0.2,
   },
-  titleHint: {
-    color: '#90CAF9',
+  activePill: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  activePillText: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#334155',
+    textTransform: 'lowercase',
+  },
+  scrollHintWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  scrollHintText: {
+    fontFamily: FONT_FAMILY.regular,
+    color: '#64748B',
     fontSize: 11,
     fontWeight: '500',
+    textTransform: 'lowercase',
   },
   hScroll: {
     flex: 1,
   },
   headerRow: {
     flexDirection: 'row',
-    backgroundColor: '#1A3A6B',
-    borderBottomWidth: 2,
-    borderBottomColor: '#1565C0',
+    backgroundColor: '#F8FAFC',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#CBD5E1',
   },
+  // Subheading: MULI BOLD CAPS
   headerText: {
-    fontSize: 10,
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 11,
     fontWeight: '800',
-    color: '#E3F2FD',
+    color: '#475569',
     textTransform: 'uppercase',
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   dataRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#E8F0FB',
+    borderBottomColor: '#F1F5F9',
   },
   rowEven: {
     backgroundColor: '#FFFFFF',
   },
   rowOdd: {
-    backgroundColor: '#F5F8FF',
+    backgroundColor: '#FAFCFE',
   },
   cell: {
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 12,
     justifyContent: 'center',
     borderRightWidth: 1,
-    borderRightColor: '#E8EFF9',
+    borderRightColor: '#F1F5F9',
+  },
+  woIdBtn: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignSelf: 'flex-start',
   },
   woIdText: {
+    fontFamily: FONT_FAMILY.bold,
     fontSize: 12,
     fontWeight: '700',
-    color: '#1565C0',
-    textDecorationLine: 'underline',
+    color: '#1D4ED8',
   },
   typeBadge: {
-    borderRadius: 6,
+    borderRadius: 5,
     paddingHorizontal: 7,
     paddingVertical: 3,
     alignSelf: 'flex-start',
   },
   typeBadgeText: {
-    fontSize: 10,
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 10.5,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  techText: {
-    fontSize: 11,
-    color: '#1A2E4A',
-    fontWeight: '600',
-    lineHeight: 15,
-  },
-  ceidText: {
-    fontSize: 11,
-    color: '#5C7EA8',
-    fontWeight: '600',
-  },
-  cellText: {
-    fontSize: 11,
-    color: '#1A2E4A',
-    lineHeight: 15,
-  },
-  problemText: {
-    fontSize: 11,
-    color: '#7B3F3F',
-    lineHeight: 15,
-  },
-  verifiedText: {
-    fontSize: 11,
-    color: '#2E5C33',
-    lineHeight: 15,
-  },
-  sevBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  sevText: {
-    fontSize: 9,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-  },
-  statusRow: {
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   statusText: {
+    fontFamily: FONT_FAMILY.bold,
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
+    textTransform: 'uppercase',
   },
-  dateText: {
+  sevBadge: {
+    borderRadius: 5,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderWidth: 1,
+  },
+  sevText: {
+    fontFamily: FONT_FAMILY.bold,
     fontSize: 10,
-    color: '#5C7EA8',
-    fontWeight: '500',
+    fontWeight: '800',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
-  deleteBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: '#FFF0F0',
+  techRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  techAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
+  techAvatarText: {
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1E3A5F',
+  },
+  // Content: Muli Regular lowercase
+  techText: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 12,
+    color: '#1E293B',
+    fontWeight: '500',
+    textTransform: 'lowercase',
+    flex: 1,
+  },
+  ceidBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+  },
+  ceidText: {
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 11.5,
+    color: '#475569',
+    fontWeight: '700',
+  },
+  customerText: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 12.5,
+    color: '#0F172A',
+    fontWeight: '600',
+    textTransform: 'lowercase',
+    lineHeight: 16,
+  },
+  deptText: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 12,
+    color: '#475569',
+    fontWeight: '500',
+    textTransform: 'lowercase',
+  },
+  problemText: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 12,
+    color: '#334155',
+    lineHeight: 16,
+    textTransform: 'lowercase',
+  },
+  verifiedText: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 12,
+    color: '#334155',
+    lineHeight: 16,
+    textTransform: 'lowercase',
+  },
+  dateText: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 11.5,
+    color: '#64748B',
+    fontWeight: '500',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  viewBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  deleteBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
 });

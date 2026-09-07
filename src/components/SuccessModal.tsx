@@ -9,6 +9,7 @@ import {
   Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { FONT_FAMILY } from '@/constants/Typography';
 
 interface SuccessModalProps {
   visible: boolean;
@@ -24,12 +25,10 @@ export default function SuccessModal({ visible, woNumber, onDismiss }: SuccessMo
 
   useEffect(() => {
     if (visible) {
-      // Reset
       scaleAnim.setValue(0.5);
       opacityAnim.setValue(0);
       checkAnim.setValue(0);
 
-      // Animate in
       Animated.sequence([
         Animated.parallel([
           Animated.spring(scaleAnim, {
@@ -51,7 +50,6 @@ export default function SuccessModal({ visible, woNumber, onDismiss }: SuccessMo
           useNativeDriver: true,
         }),
       ]).start(() => {
-        // Pulse loop
         Animated.loop(
           Animated.sequence([
             Animated.timing(pulseAnim, {
@@ -107,15 +105,17 @@ export default function SuccessModal({ visible, woNumber, onDismiss }: SuccessMo
             </View>
           </Animated.View>
 
-          {/* Title */}
-          <Text style={styles.successTitle}>Work Order Created!</Text>
+          {/* Heading: Muli Bold lowercase */}
+          <Text style={styles.successTitle}>work order created!</Text>
+          {/* Content: Muli Regular lowercase */}
           <Text style={styles.successSubtitle}>
-            Your service request has been successfully registered in the system.
+            your service request has been successfully registered in the system.
           </Text>
 
           {/* WO Number Box */}
           <View style={styles.woBox}>
-            <Text style={styles.woBoxLabel}>Work Order Number</Text>
+            {/* Subheading: MULI BOLD CAPS */}
+            <Text style={styles.woBoxLabel}>WORK ORDER NUMBER</Text>
             <Text style={styles.woNumber}>#{woNumber}</Text>
             <View style={styles.woBoxFooter}>
               <Ionicons name="time-outline" size={12} color="#5C7EA8" />
@@ -127,23 +127,23 @@ export default function SuccessModal({ visible, woNumber, onDismiss }: SuccessMo
                   year: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit',
-                })}
+                }).toLowerCase()}
               </Text>
             </View>
           </View>
 
-          {/* Info note */}
+          {/* Info note - Content: Muli Regular lowercase */}
           <View style={styles.infoRow}>
             <Ionicons name="information-circle-outline" size={14} color="#1976D2" />
             <Text style={styles.infoText}>
-              {' '}A technician will be assigned shortly. You will be notified on the registered contact.
+              {' '}a technician will be assigned shortly. you will be notified on the registered contact.
             </Text>
           </View>
 
-          {/* CTA Button */}
+          {/* CTA Button - Subheading: MULI BOLD CAPS */}
           <TouchableOpacity style={styles.ctaBtn} onPress={onDismiss} activeOpacity={0.85}>
             <Ionicons name="grid-outline" size={18} color="#fff" />
-            <Text style={styles.ctaBtnText}> Go to Dashboard</Text>
+            <Text style={styles.ctaBtnText}> GO TO DASHBOARD</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -154,84 +154,94 @@ export default function SuccessModal({ visible, woNumber, onDismiss }: SuccessMo
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(8, 20, 45, 0.65)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
   },
   card: {
     backgroundColor: '#fff',
-    borderRadius: 24,
+    borderRadius: 16,
     paddingHorizontal: 28,
     paddingVertical: 36,
     alignItems: 'center',
     width: '100%',
     maxWidth: 380,
-    shadowColor: '#1976D2',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 30,
-    elevation: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   iconRing: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: 'rgba(25, 118, 210, 0.12)',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(30, 58, 95, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 22,
+    marginBottom: 20,
   },
   iconCircle: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    backgroundColor: '#1976D2',
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: '#1E3A5F',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#1976D2',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
+  // Heading: Muli Bold lowercase
   successTitle: {
-    fontSize: 22,
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 20,
     fontWeight: '800',
-    color: '#1A2E4A',
-    marginBottom: 8,
+    color: '#111827',
+    textTransform: 'lowercase',
+    marginBottom: 6,
     textAlign: 'center',
-    letterSpacing: -0.3,
   },
+  // Content: Muli Regular lowercase
   successSubtitle: {
+    fontFamily: FONT_FAMILY.regular,
     fontSize: 13,
-    color: '#6B7FA3',
+    color: '#9CA3AF',
+    textTransform: 'lowercase',
     textAlign: 'center',
     lineHeight: 19,
-    marginBottom: 22,
+    marginBottom: 20,
   },
   woBox: {
-    backgroundColor: '#F0F7FF',
-    borderRadius: 14,
-    padding: 18,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    padding: 16,
     alignItems: 'center',
     width: '100%',
-    marginBottom: 18,
-    borderWidth: 1.5,
-    borderColor: '#BBDEFB',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
+  // Subheading: MULI BOLD CAPS
   woBoxLabel: {
-    fontSize: 11,
-    color: '#5C7EA8',
-    fontWeight: '600',
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 10.5,
+    color: '#9CA3AF',
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     marginBottom: 4,
   },
   woNumber: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#1976D2',
+    fontFamily: FONT_FAMILY.bold,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1E3A5F',
     letterSpacing: 2,
     marginBottom: 6,
   },
@@ -240,43 +250,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   woTimestamp: {
+    fontFamily: FONT_FAMILY.regular,
     fontSize: 11,
-    color: '#8FA8C4',
+    color: '#9CA3AF',
+    textTransform: 'lowercase',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#E3F2FD',
-    borderRadius: 10,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 8,
     padding: 12,
     width: '100%',
-    marginBottom: 22,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#D1FAE5',
   },
+  // Content: Muli Regular lowercase
   infoText: {
+    fontFamily: FONT_FAMILY.regular,
     fontSize: 12,
-    color: '#1565C0',
+    color: '#065F46',
+    textTransform: 'lowercase',
     flex: 1,
     lineHeight: 17,
   },
   ctaBtn: {
     flexDirection: 'row',
-    backgroundColor: '#1976D2',
-    paddingVertical: 15,
+    backgroundColor: '#1E3A5F',
+    paddingVertical: 14,
     paddingHorizontal: 32,
-    borderRadius: 14,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    shadowColor: '#1976D2',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+    gap: 8,
   },
+  // Subheading: MULI BOLD CAPS
   ctaBtnText: {
+    fontFamily: FONT_FAMILY.bold,
     color: '#fff',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontSize: 14,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
 });
