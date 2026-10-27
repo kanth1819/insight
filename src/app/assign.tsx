@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'expo-router';
 
 import { useWorkOrders, WorkOrder, Severity, WOType, WOStatus } from '@/context/WorkOrderContext';
+import { useAuth } from '@/context/AuthContext';
 import { lookupCEID, CEIDRecord } from '@/data/mockDB';
 import { useResponsive } from '@/hooks/useResponsive';
 import { AppColors } from '@/constants/theme';
@@ -20,6 +21,7 @@ import {
   FormField,
   SelectDropdown,
   SectionCard,
+  EmptyState,
 } from '@/components/ui';
 import SuccessModal from '@/components/SuccessModal';
 
@@ -157,11 +159,29 @@ const WORK_TYPE_OPTIONS: { label: string; value: WOType }[] = [
 export default function AssignScreen() {
   const router = useRouter();
   const { addWorkOrder } = useWorkOrders();
+  const { canCreateWorkOrder } = useAuth();
   const { contentMaxWidth } = useResponsive();
 
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [successVisible, setSuccessVisible] = useState(false);
   const [createdWONumber, setCreatedWONumber] = useState('');
+
+  if (!canCreateWorkOrder) {
+    return (
+      <View style={{ flex: 1, backgroundColor: AppColors.background }}>
+        <AppHeader title="assign work order" leftType="back" onLeftPress={() => router.back()} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <EmptyState
+            icon="lock-closed-outline"
+            title="access restricted"
+            subtitle="your role does not have permission to create or assign new work orders."
+            actionText="RETURN TO DASHBOARD"
+            onAction={() => router.replace('/')}
+          />
+        </View>
+      </View>
+    );
+  }
 
   const setField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));

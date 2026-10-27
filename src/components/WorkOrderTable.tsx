@@ -1,4 +1,5 @@
 import { Severity, useWorkOrders, WorkOrder, WOStatus } from '@/context/WorkOrderContext';
+import { useAuth } from '@/context/AuthContext';
 import { FONT_FAMILY } from '@/constants/Typography';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -109,6 +110,7 @@ function TableHeader() {
 function TableRow({ workOrder, index }: { workOrder: WorkOrder; index: number }) {
   const router = useRouter();
   const { deleteWorkOrder } = useWorkOrders();
+  const { canDeleteWorkOrder } = useAuth();
   const sev = SEV[workOrder.severity] ?? SEV.NORMAL;
   const sta = STA[workOrder.status] ?? STA.Open;
   const wot = WOT[workOrder.woType] ?? { bg: '#F1F5F9', text: '#334155' };
@@ -224,13 +226,15 @@ function TableRow({ workOrder, index }: { workOrder: WorkOrder; index: number })
           >
             <Ionicons name="open-outline" size={15} color="#1E3A5F" />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleDelete}
-            style={styles.deleteBtn}
-            accessibilityLabel={`delete wo ${workOrder.id}`}
-          >
-            <Ionicons name="trash-outline" size={14} color="#DC2626" />
-          </TouchableOpacity>
+          {canDeleteWorkOrder && (
+            <TouchableOpacity
+              onPress={handleDelete}
+              style={styles.deleteBtn}
+              accessibilityLabel={`delete wo ${workOrder.id}`}
+            >
+              <Ionicons name="trash-outline" size={14} color="#DC2626" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     </View>

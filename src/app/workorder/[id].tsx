@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { useWorkOrders, Severity, WOStatus } from '@/context/WorkOrderContext';
+import { useAuth } from '@/context/AuthContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { FONT_FAMILY } from '@/constants/Typography';
 import { AppColors, BorderRadius, AppShadows } from '@/constants/theme';
@@ -43,6 +44,7 @@ export default function WorkOrderDetailPage() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { workOrders, updateWorkOrder } = useWorkOrders();
+  const { canEditWorkOrder, canReassignWorkOrder } = useAuth();
   const { contentMaxWidth } = useResponsive();
 
   const wo = workOrders.find((w) => w.id === id);
@@ -259,25 +261,29 @@ export default function WorkOrderDetailPage() {
       {/* Fixed Bottom Action Bar */}
       <SafeAreaView edges={['bottom']} style={styles.bottomBarSafe}>
         <View style={styles.bottomBar}>
-          <PrimaryButton
-            title="EDIT WO"
-            onPress={() => {
-              setEditCustomer(wo.customer);
-              setEditDepartment(wo.department);
-              setEditLocation(wo.physicalLocation);
-              setEditProblem(wo.reportedProblem);
-              setEditStatus(wo.status);
-              setEditSeverity(wo.severity);
-              setEditModalVisible(true);
-            }}
-            style={styles.actionBtnBlue}
-          />
+          {canEditWorkOrder && (
+            <PrimaryButton
+              title="EDIT WO"
+              onPress={() => {
+                setEditCustomer(wo.customer);
+                setEditDepartment(wo.department);
+                setEditLocation(wo.physicalLocation);
+                setEditProblem(wo.reportedProblem);
+                setEditStatus(wo.status);
+                setEditSeverity(wo.severity);
+                setEditModalVisible(true);
+              }}
+              style={styles.actionBtnBlue}
+            />
+          )}
 
-          <SecondaryButton
-            title="REASSIGN"
-            onPress={() => setReassignModalVisible(true)}
-            style={styles.actionBtnOutlined}
-          />
+          {canReassignWorkOrder && (
+            <SecondaryButton
+              title="REASSIGN"
+              onPress={() => setReassignModalVisible(true)}
+              style={styles.actionBtnOutlined}
+            />
+          )}
 
           <SecondaryButton
             title="PRINT REPORT"

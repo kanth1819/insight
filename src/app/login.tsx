@@ -157,28 +157,33 @@ export default function LoginScreen() {
 
             {/* Quick Demo Fill Section */}
             <View style={styles.demoSection}>
-              <Text style={styles.demoLabel}>QUICK DEMO FILL:</Text>
+              <Text style={styles.demoLabel}>SELECT DEMO ACCOUNT (ROLE ACCESS):</Text>
               <View style={styles.demoChipsRow}>
                 <TouchableOpacity
-                  style={styles.demoChip}
+                  style={[styles.demoChip, styles.demoChipManager]}
                   onPress={() => handleQuickFill('001', 'medvice001')}
                   activeOpacity={0.75}
                 >
-                  <Text style={styles.demoChipText}>USER 001</Text>
+                  <Text style={[styles.demoChipRole, { color: '#1D4ED8' }]}>MANAGER</Text>
+                  <Text style={styles.demoChipSub}>001 • All Access</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                  style={styles.demoChip}
+                  style={[styles.demoChip, styles.demoChipSupervisor]}
                   onPress={() => handleQuickFill('002', 'medvice002')}
                   activeOpacity={0.75}
                 >
-                  <Text style={styles.demoChipText}>USER 002</Text>
+                  <Text style={[styles.demoChipRole, { color: '#6D28D9' }]}>SUPERVISOR</Text>
+                  <Text style={styles.demoChipSub}>002 • Operations</Text>
                 </TouchableOpacity>
+
                 <TouchableOpacity
-                  style={styles.demoChip}
+                  style={[styles.demoChip, styles.demoChipTechnician]}
                   onPress={() => handleQuickFill('003', 'medvice003')}
                   activeOpacity={0.75}
                 >
-                  <Text style={styles.demoChipText}>USER 003</Text>
+                  <Text style={[styles.demoChipRole, { color: '#047857' }]}>TECHNICIAN</Text>
+                  <Text style={styles.demoChipSub}>003 • Field Tech</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -199,33 +204,45 @@ export default function LoginScreen() {
               <View style={styles.modalIconWrap}>
                 <Ionicons name="key-outline" size={22} color={AppColors.primary} />
               </View>
-              <Text style={styles.modalTitle}>password assistance</Text>
+              <Text style={styles.modalTitle}>demo role credentials</Text>
             </View>
 
             <Text style={styles.modalBody}>
-              for demo and clinical testing, please use the pre-configured technician credentials:
+              switch between these 3 pre-configured demo tiers to test access control:
             </Text>
 
             <View style={styles.modalCredentialsBox}>
-              <Text style={styles.modalCredRow}>
-                <Text style={styles.boldText}>username: </Text>001
-              </Text>
-              <Text style={styles.modalCredRow}>
-                <Text style={styles.boldText}>password: </Text>medvice001
-              </Text>
+              <View style={styles.credTierItem}>
+                <Text style={styles.modalCredRow}>
+                  <Text style={styles.boldText}>001 (Manager): </Text>pw: medvice001
+                </Text>
+                <Text style={styles.credDescText}>all menus + full work order capabilities</Text>
+              </View>
+              <View style={[styles.credTierItem, { borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 6, marginTop: 4 }]}>
+                <Text style={styles.modalCredRow}>
+                  <Text style={styles.boldText}>002 (Supervisor): </Text>pw: medvice002
+                </Text>
+                <Text style={styles.credDescText}>scoped dashboard, AM, SM, superfind + create/edit/reassign</Text>
+              </View>
+              <View style={[styles.credTierItem, { borderTopWidth: 1, borderTopColor: '#E2E8F0', paddingTop: 6, marginTop: 4 }]}>
+                <Text style={styles.modalCredRow}>
+                  <Text style={styles.boldText}>003 (Technician): </Text>pw: medvice003
+                </Text>
+                <Text style={styles.credDescText}>view-only CM/PM workorders & superfind</Text>
+              </View>
             </View>
 
             <View style={styles.modalActions}>
               <SecondaryButton
-                title="CANCEL"
+                title="CLOSE"
                 variant="ghost"
                 onPress={() => setShowForgotModal(false)}
                 style={{ minWidth: 80 }}
               />
               <PrimaryButton
-                title="AUTO FILL 001"
+                title="FILL 001"
                 onPress={() => handleQuickFill('001', 'medvice001')}
-                style={{ height: 44, paddingHorizontal: 16 }}
+                style={{ height: 40, paddingHorizontal: 12 }}
               />
             </View>
           </View>
@@ -270,8 +287,8 @@ const styles = StyleSheet.create({
     ...AppShadows.card,
   },
   logoImage: {
-    width: 230,
-    height: 60,
+    width: 240,
+    height: 72,
   },
   loginCard: {
     backgroundColor: '#FFFFFF',
@@ -353,23 +370,54 @@ const styles = StyleSheet.create({
   demoChipsRow: {
     flexDirection: 'row',
     gap: 8,
+    width: '100%',
+    justifyContent: 'space-between',
   },
   demoChip: {
+    flex: 1,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: AppColors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
     ...AppShadows.subtle,
   },
-  demoChipText: {
+  demoChipManager: {
+    borderColor: '#BFDBFE',
+    backgroundColor: '#F8FAFF',
+  },
+  demoChipSupervisor: {
+    borderColor: '#DDD6FE',
+    backgroundColor: '#FAF8FF',
+  },
+  demoChipTechnician: {
+    borderColor: '#A7F3D0',
+    backgroundColor: '#F4FDF9',
+  },
+  demoChipRole: {
     fontFamily: FONT_FAMILY.bold,
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '800',
-    color: AppColors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+  },
+  demoChipSub: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 9.5,
+    color: AppColors.textSecondary,
+    textTransform: 'lowercase',
+    marginTop: 2,
+  },
+  credTierItem: {
+    gap: 2,
+  },
+  credDescText: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 11.5,
+    color: AppColors.textSecondary,
+    textTransform: 'lowercase',
   },
   modalOverlay: {
     flex: 1,

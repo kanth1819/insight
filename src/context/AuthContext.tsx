@@ -13,9 +13,19 @@ const TEMP_USERS: Record<string, string> = {
 };
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface AuthContextType {
+import { UserRole, hasCapability } from '@/constants/permissions';
+
+export type { UserRole };
+
+export interface AuthContextType {
   isLoggedIn: boolean;
   currentUserId: string | null;
+  userRole: UserRole | null;
+  isManager: boolean;
+  canCreateWorkOrder: boolean;
+  canEditWorkOrder: boolean;
+  canReassignWorkOrder: boolean;
+  canDeleteWorkOrder: boolean;
   login: (userId: string, password: string) => boolean;
   logout: () => void;
 }
@@ -47,8 +57,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCurrentUserId(null);
   };
 
+  const userRole: UserRole | null = isLoggedIn && currentUserId
+    ? (currentUserId === '001'
+        ? 'manager'
+        : currentUserId === '002'
+          ? 'supervisor'
+          : currentUserId === '003'
+            ? 'technician'
+            : 'employee')
+    : null;
+
+  const isManager = userRole === 'manager';
+  const canCreateWorkOrder = hasCapability(userRole, 'canCreateWorkOrder');
+  const canEditWorkOrder = hasCapability(userRole, 'canEditWorkOrder');
+  const canReassignWorkOrder = hasCapability(userRole, 'canReassignWorkOrder');
+  const canDeleteWorkOrder = hasCapability(userRole, 'canDeleteWorkOrder');
+
   return (
-    <AuthContext.Provider value={{ isLoggedIn, currentUserId, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        isLoggedIn,
+        currentUserId,
+        userRole,
+        isManager,
+        canCreateWorkOrder,
+        canEditWorkOrder,
+        canReassignWorkOrder,
+        canDeleteWorkOrder,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

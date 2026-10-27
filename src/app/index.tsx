@@ -27,7 +27,7 @@ type FilterTab = 'ALL' | 'OPEN' | 'ACKNOWLEDGED' | 'COMPLETED';
 export default function DashboardScreen() {
   const router = useRouter();
   const { workOrders } = useWorkOrders();
-  const { isLoggedIn, currentUserId, logout } = useAuth();
+  const { isLoggedIn, currentUserId, userRole, canCreateWorkOrder, logout } = useAuth();
   const { isDesktop, contentMaxWidth } = useResponsive();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,14 +70,16 @@ export default function DashboardScreen() {
         isMenuOpen={drawerOpen}
         onLeftPress={() => setDrawerOpen((prev) => !prev)}
         rightAction={
-          <TouchableOpacity
-            onPress={() => router.push('/assign')}
-            style={styles.plusBtn}
-            accessibilityLabel="create work order"
-            activeOpacity={0.85}
-          >
-            <Ionicons name="add" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          canCreateWorkOrder ? (
+            <TouchableOpacity
+              onPress={() => router.push('/assign')}
+              style={styles.plusBtn}
+              accessibilityLabel="create work order"
+              activeOpacity={0.85}
+            >
+              <Ionicons name="add" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+          ) : undefined
         }
       />
 
@@ -195,6 +197,7 @@ export default function DashboardScreen() {
           router.replace('/login' as any);
         }}
         currentUserId={currentUserId}
+        userRole={userRole}
       />
     </View>
   );

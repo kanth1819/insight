@@ -1,36 +1,52 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FONT_FAMILY } from '@/constants/Typography';
 import { AppColors, BorderRadius } from '@/constants/theme';
 import SecondaryButton from './SecondaryButton';
 
-interface EmptyStateProps {
+export interface EmptyStateProps {
   icon?: keyof typeof Ionicons.glyphMap;
-  title: string;
+  title?: string;
   subtitle?: string;
   actionText?: string;
   onAction?: () => void;
+  loading?: boolean;
+  loadingText?: string;
   style?: ViewStyle;
 }
 
 export default function EmptyState({
   icon = 'document-text-outline',
-  title,
+  title = 'No records found',
   subtitle,
   actionText,
   onAction,
+  loading = false,
+  loadingText = 'Loading...',
   style,
 }: EmptyStateProps) {
+  if (loading) {
+    return (
+      <View style={[styles.container, style]}>
+        <View style={styles.iconCircle}>
+          <ActivityIndicator size="small" color={AppColors.primary} />
+        </View>
+        <Text style={styles.title}>{loadingText}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.iconCircle}>
         <Ionicons name={icon} size={36} color={AppColors.primary} />
       </View>
 
-      <Text style={styles.title}>{title.toLowerCase()}</Text>
+      <Text style={styles.title}>{title}</Text>
 
-      {subtitle && <Text style={styles.subtitle}>{subtitle.toLowerCase()}</Text>}
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
       {actionText && onAction && (
         <SecondaryButton
@@ -68,7 +84,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: AppColors.textPrimary,
-    textTransform: 'lowercase',
     marginBottom: 6,
     textAlign: 'center',
   },
@@ -76,7 +91,6 @@ const styles = StyleSheet.create({
     fontFamily: FONT_FAMILY.regular,
     fontSize: 13,
     color: AppColors.textSecondary,
-    textTransform: 'lowercase',
     textAlign: 'center',
     lineHeight: 19,
     marginBottom: 16,
@@ -86,3 +100,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
+
